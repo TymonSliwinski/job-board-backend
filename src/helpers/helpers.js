@@ -62,7 +62,7 @@ export const extractFilters = (query) => {
     }
     if (query.requirements) {
         where['requirements'] = {
-            search: query.requirements.match(regex).join(' | ').replaceAll(':', '\\:'),
+            search: query.requirements.match(regex).join(' | ').replace(/:/g, '\\:'),
             mode: 'insensitive'
         }
     }

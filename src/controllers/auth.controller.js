@@ -5,15 +5,15 @@ import * as jwt from '../services/jwt.service.js';
 
 
 export const login = async (req, res) => {
-    const auth = async(password, user) => {
+    const auth = async(password, user ) => {
         if(!await bcrypt.compare(password, user.password)) { 
             return res.status(401).send({ message: 'Wrong password' });
         }
         const tokens = jwt.createTokens(user);
-        res.status(200).send({ message: 'Logged in', tokens });
+        res.status(200).send({ message: 'Logged in', tokens,  userType: user.userType });
     }
 
-    const { email, password, type } = req.body;
+    const { email, password } = req.body;
     if(!email || !password) {
         return res.status(400).send({ message: 'No username/email or password provided' })
     };
@@ -53,7 +53,12 @@ export const register = async (req, res) => {
     if (userEmailCheck)
         return res.status(400).json({ message: 'User already exists' });
     
-    console.log('register new user');
+    if (userType === 'company' && req.body.name) {
+        const company = await prisma.company.findFirst({ where: { name: req.body.name } })
+        if (company)
+            return res.status(400).json({ message: 'Company already exists' });
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
     try {
         const user = await prisma.user.create({
@@ -64,11 +69,16 @@ export const register = async (req, res) => {
                 userType
             }
         });
+        if (!validateFields(req.body))
+            throw new Error('Required fields not specified');
+        let avatar = req.body.avatar;
+        if (avatar && !avatar.includes('data:image/jpeg;base64,')) {
+            avatar = 'data:image/jpeg;base64,' + avatar;
+        }
         if (userType === 'developer') {
             const {
                 firstName,
                 lastName,
-                avatar
             } = req.body;
             await prisma.developer.create({
                 data: {
@@ -81,12 +91,9 @@ export const register = async (req, res) => {
         } else if (userType === 'company') {
             const {
                 name,
-                avatar,
                 location
             } = req.body;
 
-            // if ([name, avatar, location].some(e => !e))
-            //     throw new Error('Required fields not specified');
             await prisma.company.create({
                 data: {
                     name,
@@ -97,6 +104,7 @@ export const register = async (req, res) => {
             });
         } else {
             console.log('Invalid user Type:', userType);
+            return res.status(400).json({ message: 'Invalid user type', userType });
         }
         return res.status(201).json({ message: 'User created' });
     } catch(error) {
@@ -118,7 +126,7 @@ export const refreshToken = async (req, res) => {
     }
     const response = await jwt.refreshTokenService(token);
     if (response.hasOwnProperty('accessToken') && response.hasOwnProperty('refreshToken')) {
-        res.status(200).send(response);
+        res.status(200).send({ message: 'Token refreshed', tokens: response });
     } else {
         res.status(400).send({ message: 'Token expired or bad token provided' });
     }

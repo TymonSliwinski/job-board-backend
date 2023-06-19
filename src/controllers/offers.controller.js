@@ -13,12 +13,6 @@ export const getOffers = async (req, res) => {
             take: size,
             skip: (page - 1) * size,
             where: filters
-            // where: {
-            //     requirements: {
-            //         search: '\\:3',
-            //         mode: 'insensitive'
-            //     }
-            // }
         })
         return res.status(200).json({ data: offers, meta: { page, size, filters } });
     } catch (err) {
@@ -58,6 +52,9 @@ export const addOffer = async (req, res) => {
                 userId: req.user.id,
             },
         });
+        if (!company) {
+            return res.status(403).json({ message: 'Forbidden' });
+        }
         const offer = await prisma.offer.create({
             data: {
                 ...data,
@@ -82,11 +79,10 @@ export const updateOffer = async (req, res) => {
     }
     const data = parseOfferData(getOfferData(req.body));
     try {
-        const offer = await prisma.offer.update({
+        let offer = await prisma.offer.findFirst({
             where: {
                 id: offerId,
             },
-            data,
         });
         if (!offer) {
             return res.status(404).json({ message: 'Offer not found' });
@@ -94,6 +90,13 @@ export const updateOffer = async (req, res) => {
         if (offer.companyId !== req.company.id) {
             return res.status(403).json({ message: 'Forbidden - you do not have access to this resource' });
         }
+        offer = await prisma.offer.update({
+            where: {
+                id: offer.id,
+            },
+            data,
+        });
+
         return res.status(200).json(offer);
     } catch (err) {
         console.log(err);
