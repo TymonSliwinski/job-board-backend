@@ -14,6 +14,9 @@ export const getOffers = async (req, res) => {
             skip: (page - 1) * size,
             where: filters
         })
+        for (const offer of offers) {
+            offer["requirements"] = JSON.parse(offer["requirements"]);
+        }
         return res.status(200).json({ data: offers, meta: { page, size, filters } });
     } catch (err) {
         console.log(err)
@@ -36,6 +39,7 @@ export const getOffer = async (req, res) => {
         if (!offer) {
             return res.status(404).json({ message: 'Error - offer not found' });
         }
+        offer["requirements"] = JSON.parse(offer["requirements"]);
         return res.status(200).json(offer);
     } catch (err) {
         console.log(err)
@@ -61,6 +65,7 @@ export const addOffer = async (req, res) => {
                 companyId: company.id,
             },
         });
+        offer["requirements"] = JSON.parse(offer["requirements"]);
         return res.status(201).setHeader('Location', `/offers/${offer.id}`).json(offer);
     } catch (err) {
         console.log(err);

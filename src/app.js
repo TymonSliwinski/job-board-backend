@@ -52,7 +52,7 @@ app.get(
     }),
     (req, res) => {
         console.log('req: ', req);
-        res.redirect('http://localhost:5000/');
+        res.redirect('/');
     }
 );
 
