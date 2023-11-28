@@ -25,6 +25,9 @@ export const getApplications = async (req, res) => {
     try {
         if (user.Company[0]) {
             applications = await prisma.offer.findMany({
+                orderBy: {
+                    createdAt: 'desc'
+                },
                 where: {
                     companyId: user.Company[0].id,
                     Application: {
@@ -35,6 +38,9 @@ export const getApplications = async (req, res) => {
                     id: true,
                     title: true,
                     Application: {
+                        orderBy: {
+                            createdAt: 'desc'
+                        },
                         select: {
                             id: true,
                             status: true,
@@ -153,21 +159,45 @@ export const resolveApplication = async (req, res) => {
     const { status } = req.body;
     const id = parseInt(req.params.id);
 
-    if (!id || isNaN(id) || !status) {
-        return res.status(400).json({ message: 'Missing data' });
+    if (!id || isNaN(id) || !status | status !== 'accepted' && status !== 'rejected') {
+        return res.status(400).json({ message: 'Missing or invalid data' });
     }
 
     try {
         const company = await prisma.company.findFirst({
             where: {
-                userId: req.company.id
+                id: req.company.id
             }
         });
         if (!company) {
             return res.status(403).json({ message: 'Forbidden' });
         }
 
-        const application = await prisma.application.update({
+        const application = await prisma.application.findFirst({
+            where: {
+                id
+            },
+            select: {
+                id: true,
+                status: true,
+                offer: {
+                    select: {
+                        id: true,
+                        companyId: true
+                    }
+                }
+            }
+        });
+
+        if (!application) {
+            return res.status(404).json({ message: 'Application not found' });
+        }
+
+        if (application.offer.companyId !== company.id) {
+            return res.status(403).json({ message: 'Forbidden' });
+        }
+
+        const updatedApplication = await prisma.application.update({
             where: {
                 id
             },
@@ -175,9 +205,10 @@ export const resolveApplication = async (req, res) => {
                 status
             }
         });
-        return res.status(200).json({ status: application.status });
+
+        return res.status(200).json({ status: updatedApplication.status });
     } catch (err) {
-        if (err instanceof Prisma.PrismaClientValidationError) {
+        if (err instanceof Prisma.PrismaClientValidationError || err instanceof Prisma.PrismaClientKnownRequestError) {
             return res.status(400).json({ message: 'Invalid application data', err });
         }
         console.log(err)
