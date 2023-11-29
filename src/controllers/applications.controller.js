@@ -65,6 +65,9 @@ export const getApplications = async (req, res) => {
         }
         else if (user.Developer[0]) {
             applications = await prisma.application.findMany({
+                orderBy: {
+                    createdAt: 'desc'
+                },
                 where: {
                     developerId: user.Developer[0].id
                 },
