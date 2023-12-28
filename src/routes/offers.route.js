@@ -12,4 +12,6 @@ router.post('/', verifyToken, OffersController.addOffer);
 
 router.put('/:id', verifyToken, ensureCompany, OffersController.updateOffer);
 
+router.delete('/:id', verifyToken, ensureCompany, OffersController.deleteOffer);
+
 export default router;

@@ -6,6 +6,8 @@ const fields = [
     'requirements',
     'salaryLower',
     'salaryUpper',
+    'latitude',
+    'longitude',
 ];
 
 const filters = [
@@ -56,49 +58,25 @@ export const extractFilters = (query) => {
     }
     if (query.location) {
         where['location'] = {
-            equals: query.location.trim(),
+            search: query.location.trim(),
             mode: 'insensitive'
         }
     }
     if (query.requirements) {
         where['requirements'] = {
-            search: query.requirements.match(regex).join(' | ').replace(/:/g, '\\:'),
+            search: query.requirements.trim(),
             mode: 'insensitive'
         }
     }
-    // TODO - dorobic filtry do konca
+    if (query.salaryLower) {
+        where['salaryLower'] = {
+            gte: parseInt(query.salaryLower)
+        }
+    }
+    if (query.salaryUpper) {
+        where['salaryUpper'] = {
+            lte: parseInt(query.salaryUpper)
+        }
+    }
     return where;
 };
-
-// /**
-//  * 
-//  * @param {Array<offer>} offers 
-//  * @param {object} filters 
-//  */
-// export const filterOffers = async (offers, filters) => {
-//     const {
-//         title,
-//         description,
-//         category,
-//         requirements,
-//         location,
-//         salaryLower,
-//         salaryUpper
-//     } = filters;
-//     return offers.filter(offer => {
-//         Object.keys(filters).reduce((isValid, filter) => {
-//             if (!isValid) return false;
-
-//         }, true);
-//         let isValid = true;
-//         if (title) {
-//             isValid &&= offer.title.toLowerCase().includes(title.toLowerCase());
-//         } else if (!isValid && description) {
-//             isValid &&= offer.description.toLowerCase().includes(description.toLowerCase());
-//         }
-//         if (category) {
-//             isValid &&= 
-//         }
-//         return isValid
-//     });
-// };

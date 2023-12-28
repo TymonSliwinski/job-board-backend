@@ -12,7 +12,10 @@ export const getOffers = async (req, res) => {
         const offers = await prisma.offer.findMany({
             take: size,
             skip: (page - 1) * size,
-            where: filters
+            where: filters,
+            orderBy: {
+                createdAt: 'desc',
+            },
         })
         for (const offer of offers) {
             offer["requirements"] = JSON.parse(offer["requirements"]);
@@ -112,3 +115,31 @@ export const updateOffer = async (req, res) => {
     }
 };
 
+export const deleteOffer = async (req, res) => {
+    const offerId = parseInt(req.params.id);
+    if (isNaN(offerId)) {
+        return res.status(400).json({ message: 'Invalid offer id' })
+    }
+    try {
+        let offer = await prisma.offer.findFirst({
+            where: {
+                id: offerId,
+            },
+        });
+        if (!offer) {
+            return res.status(404).json({ message: 'Offer not found' });
+        }
+        if (offer.companyId !== req.company.id) {
+            return res.status(403).json({ message: 'Forbidden' });
+        }
+        offer = await prisma.offer.delete({
+            where: {
+                id: offer.id,
+            },
+        });
+        return res.status(200).json(offer);
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Error while deleting offer', err });
+    }
+};
